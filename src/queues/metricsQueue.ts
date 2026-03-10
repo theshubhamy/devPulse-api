@@ -6,6 +6,10 @@ export const metricsQueue = new Queue('metricsAggregation', {
     },
 });
 
+metricsQueue.on('error', (err) => {
+    console.error(`[Redis/Queue] Connection error: ${err.message}`);
+});
+
 export const addAggregationJob = async (userId: string) => {
     await metricsQueue.add('aggregateUserMetrics', { userId }, {
         attempts: 3,

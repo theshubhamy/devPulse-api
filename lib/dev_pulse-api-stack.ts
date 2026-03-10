@@ -13,12 +13,13 @@ export class DevPulseApiStack extends cdk.Stack {
       handler: 'handler',
       runtime: lambda.Runtime.NODEJS_20_X, // Change to your preferred Node runtime
       environment: {
-        // Provide placeholder MONGO_URI, since secrets shouldn't be hardcoded here
         MONGODB_URI: process.env.MONGODB_URI || '',
+        REDIS_URL: process.env.REDIS_URL || '',
+        JWT_SECRET: process.env.JWT_SECRET || '',
       },
       timeout: cdk.Duration.seconds(30),
       bundling: {
-        externalModules: ['aws-sdk'], // AWS SDK is provided by Lambda runtime
+        externalModules: ['aws-sdk'],
       },
     });
 
