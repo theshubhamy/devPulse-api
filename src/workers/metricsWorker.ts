@@ -3,16 +3,18 @@ import { WorkSession } from '../models/workSession.js';
 import { PullRequest } from '../models/pullRequest.js';
 import { Review } from '../models/review.js';
 
-export const processMetricsAggregation = async (userId: string) => {
-    console.log(`Aggregating metrics for user: ${userId}`);
+export const processMetricsAggregation = async (userId: string, targetDate: Date = new Date()) => {
+    console.log(`Aggregating metrics for user: ${userId} for date: ${targetDate.toDateString()}`);
 
-    const today = new Date();
+    const today = new Date(targetDate);
     today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
 
     // 1. Aggregate Work Sessions
     const sessions = await WorkSession.find({
         userId,
-        clockInTime: { $gte: today },
+        clockInTime: { $gte: today, $lt: tomorrow },
         clockOutTime: { $exists: true },
     });
 
@@ -27,7 +29,7 @@ export const processMetricsAggregation = async (userId: string) => {
     // 2. Aggregate PRs Merged Today
     const mergedPRs = await PullRequest.find({
         authorId: userId,
-        mergedAt: { $gte: today },
+        mergedAt: { $gte: today, $lt: tomorrow },
         status: 'merged'
     });
 
@@ -49,13 +51,13 @@ export const processMetricsAggregation = async (userId: string) => {
     // 3. PRs Opened Today
     const prsOpened = await PullRequest.countDocuments({
         authorId: userId,
-        prCreatedAt: { $gte: today }
+        prCreatedAt: { $gte: today, $lt: tomorrow }
     });
 
     // 4. PRs Reviewed Today
     const prsReviewed = await Review.countDocuments({
         reviewerId: userId,
-        submittedAt: { $gte: today }
+        submittedAt: { $gte: today, $lt: tomorrow }
     });
 
     // 5. Compute Delivery Reliability Score (Conceptual MVP Formula)

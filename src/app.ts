@@ -34,6 +34,8 @@ import repositoryRoutes from './routes/repository.js';
 import workSessionRoutes from './routes/workSession.js';
 import analyticsRoutes from './routes/analytics.js';
 import webhookRoutes from './routes/webhook.js';
+import pullRequestRoutes from './routes/pullRequests.js';
+import metricsRoutes from './routes/metrics.js';
 
 // Public Routes
 app.route('/webhooks', webhookRoutes);
@@ -44,12 +46,17 @@ app.use('/users/*', authMiddleware);
 app.use('/repositories/*', authMiddleware);
 app.use('/work-sessions/*', authMiddleware);
 app.use('/analytics/*', authMiddleware);
+app.use('/pull-requests/*', authMiddleware);
+app.use('/metrics/*', authMiddleware);
 
 app.route('/organizations', organizationRoutes);
 app.route('/users', userRoutes);
+app.route('/auth', userRoutes); // Frontend expects /auth/me
 app.route('/repositories', repositoryRoutes);
 app.route('/work-sessions', workSessionRoutes);
 app.route('/analytics', analyticsRoutes);
+app.route('/pull-requests', pullRequestRoutes);
+app.route('/metrics', metricsRoutes);
 
 // Global Error Handler
 app.onError((err, c) => {

@@ -13,6 +13,14 @@ app.get('/', async c => {
   return c.json({ users });
 });
 
+app.get('/me', async c => {
+  const payload = c.get('jwtPayload');
+  if (!payload?.userId) return c.json({ error: 'Unauthorized' }, 401);
+  const user = await User.findById(payload.userId).populate('organizationId');
+  if (!user) return c.json({ error: 'User not found' }, 404);
+  return c.json(user);
+});
+
 app.post('/', zValidator('json', createUserSchema), async c => {
   const body = c.req.valid('json');
   const newUser = new User(body);
