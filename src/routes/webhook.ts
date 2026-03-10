@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
-import { PullRequest } from '../models/pullRequest';
-import { Review } from '../models/review';
-import { Repository } from '../models/repository';
-import { User } from '../models/user';
+import { PullRequest } from '../models/pullRequest.js';
+import { Review } from '../models/review.js';
+import { Repository } from '../models/repository.js';
+import { User } from '../models/user.js';
 
 const app = new Hono();
 
@@ -57,6 +57,13 @@ app.post('/github', async c => {
       }
 
       await pr.save();
+
+      // Trigger background metrics aggregation if PR merged
+      if (pr.status === 'merged' && author?._id) {
+        const { addAggregationJob } = await import('../queues/metricsQueue.js');
+        await addAggregationJob(author._id.toString());
+      }
+
       console.log(
         `Processed PR event: ${action} for PR #${pull_request.number}`,
       );

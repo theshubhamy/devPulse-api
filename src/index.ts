@@ -1,6 +1,6 @@
 import { handle } from 'hono/aws-lambda';
-import app from './app';
-import { connectDB } from './db/connect';
+import app from './app.js';
+import { connectDB } from './db/connect.js';
 
 export const handler = async (event: any, context: any) => {
   // Connect to the DB on cold starts

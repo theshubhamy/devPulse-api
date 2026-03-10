@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { DailyMetrics } from '../models/dailyMetrics';
+import { DailyMetrics } from '../models/dailyMetrics.js';
 
 const app = new Hono();
 
