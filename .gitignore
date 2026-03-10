@@ -6,3 +6,27 @@ node_modules
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# Environment variables
+.env
+.env.*
+
+# Large binaries and packages
+*.pkg
+*.zip
+*.tar.gz
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
