@@ -16,11 +16,14 @@ app.use(
 );
 
 // Health Check
-app.get('/', c => {
+app.get('/', async c => {
+  const isDBConnected = (await import('mongoose')).connection.readyState === 1;
   return c.json({
     message: 'Welcome to devPulse API - Built with Hono + Mongoose',
     version: '1.0.0',
-    status: 'healthy',
+    status: isDBConnected ? 'healthy' : 'degraded',
+    db: isDBConnected ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString(),
   });
 });
 

@@ -25,8 +25,9 @@ app.post('/github', async c => {
         return c.json({ message: 'Repository not tracked' }, 200);
       }
 
-      // Upsert User
-      let author = await User.findOne({ githubUserId: sender.id.toString() });
+      // Upsert User (Author of the PR)
+      const githubUserId = (pull_request.user?.id || sender.id).toString();
+      let author = await User.findOne({ githubUserId });
 
       // Upsert PR
       let pr = await PullRequest.findOne({

@@ -11,6 +11,7 @@ export interface IDailyMetrics {
   linesDeleted: number;
   totalWorkedMinutes: number;
   totalIdleMinutes: number;
+  deliveryReliabilityScore: number;
 }
 
 const DailyMetricsSchema = new Schema<IDailyMetrics>(
@@ -25,6 +26,7 @@ const DailyMetricsSchema = new Schema<IDailyMetrics>(
     linesDeleted: { type: Number, default: 0 },
     totalWorkedMinutes: { type: Number, default: 0 },
     totalIdleMinutes: { type: Number, default: 0 },
+    deliveryReliabilityScore: { type: Number, default: 0 },
   },
   {
     timestamps: true,
