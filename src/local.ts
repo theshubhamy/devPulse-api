@@ -1,7 +1,6 @@
 import { serve } from '@hono/node-server';
 import app from './app.js';
 import { connectDB } from './db/connect.js';
-import './workers/metricsWorker'; // Start the worker
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 

@@ -24,6 +24,8 @@
     "typescript": "~5.9.3"
   },
   "dependencies": {
+    "@aws-sdk/client-sqs": "^3.1005.0",
+    "@aws-sdk/util-dynamodb": "^3.996.2",
     "@hono/node-server": "^1.19.9",
     "@hono/zod-validator": "^0.7.6",
     "aws-cdk-lib": "^2.238.0",
