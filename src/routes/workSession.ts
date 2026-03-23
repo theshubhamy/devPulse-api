@@ -2,8 +2,11 @@ import { Hono } from 'hono';
 import { WorkSession } from '../models/workSession.js';
 import { zValidator } from '@hono/zod-validator';
 import { clockInSchema, clockOutSchema } from '../validators/workSession.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const app = new Hono();
+
+app.use('*', authMiddleware);
 
 // Get the user's active session
 app.get('/active/:userId', async c => {

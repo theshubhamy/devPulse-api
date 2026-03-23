@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
 import { DailyMetrics } from '../models/dailyMetrics.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const app = new Hono();
+
+app.use('*', authMiddleware);
 
 // Get dashboard metrics for a user
 app.get('/user/:userId', async c => {

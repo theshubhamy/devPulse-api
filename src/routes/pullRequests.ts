@@ -1,18 +1,34 @@
 import { Hono } from 'hono';
 import { DailyMetrics } from '../models/dailyMetrics.js';
 import { PullRequest } from '../models/pullRequest.js';
+import { Repository } from '../models/repository.js';
+import { User } from '../models/user.js';
+import { authMiddleware } from '../middleware/auth.js';
 
-const app = new Hono();
+const app = new Hono<{
+    Variables: {
+        organizationId: string;
+        userId: string;
+        userEmail: string;
+        userRole: string;
+    };
+}>();
+
+app.use('*', authMiddleware);
 
 app.get('/velocity', async c => {
+    const orgId = c.get('organizationId');
     const days = Number(c.req.query('days')) || 7;
 
-    // Aggregate from DailyMetrics for simplicity, or directly from PullRequest
-    // Frontend expects 'period' (e.g., 'Week 1', 'Feb 10')
+    // Find all users in this organization
+    const orgUsers = await User.find({ organizationId: orgId }).select('_id');
+    const userIds = orgUsers.map(u => u._id);
+
     const statusDate = new Date();
     statusDate.setDate(statusDate.getDate() - days);
 
     const metrics = await DailyMetrics.find({
+        userId: { $in: userIds },
         date: { $gte: statusDate }
     }).sort({ date: 1 });
 
@@ -22,7 +38,6 @@ app.get('/velocity', async c => {
         const existing = acc.find(a => a.period === period);
         if (existing) {
             existing.prCount += curr.prsMerged;
-            // Weighted average merge time could be better, but simple average for MVP
             existing.avgMergeTime = (existing.avgMergeTime + curr.avgMergeTime) / 2;
         } else {
             acc.push({
@@ -37,9 +52,19 @@ app.get('/velocity', async c => {
     return c.json(velocity);
 });
 
-// Basic CRUD for PRs could go here
+// Basic CRUD for PRs scoped to organization
 app.get('/', async c => {
-    const prs = await PullRequest.find().populate('authorId').limit(50);
+    const orgId = c.get('organizationId');
+
+    // Find all repositories in this organization
+    const orgRepos = await Repository.find({ organizationId: orgId }).select('_id');
+    const repoIds = orgRepos.map(r => r._id);
+
+    const prs = await PullRequest.find({ repositoryId: { $in: repoIds } })
+        .populate('authorId')
+        .sort({ prCreatedAt: -1 })
+        .limit(50);
+
     return c.json({ data: prs, total: prs.length });
 });
 

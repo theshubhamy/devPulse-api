@@ -37,12 +37,13 @@ async function seed() {
         console.log(`Created Org: ${org.name}`);
 
         // 3. Create Users
-        const users = await User.insertMany([
+        const users = await User.create([
             {
                 organizationId: org._id,
                 githubUserId: '001',
                 name: 'Alice Johnson',
                 email: 'alice@techpulse.io',
+                password: 'password123',
                 role: 'Owner'
             },
             {
@@ -50,6 +51,7 @@ async function seed() {
                 githubUserId: '002',
                 name: 'Bob Smith',
                 email: 'bob@techpulse.io',
+                password: 'password123',
                 role: 'Developer'
             },
             {
@@ -57,6 +59,7 @@ async function seed() {
                 githubUserId: '003',
                 name: 'Charlie Davis',
                 email: 'charlie@techpulse.io',
+                password: 'password123',
                 role: 'Developer'
             }
         ]);
@@ -120,7 +123,7 @@ async function seed() {
 
                     // Mock Reviews (Peer Support)
                     // Others review this PR
-                    const reviewers = users.filter(u => u._id.toString() !== user._id.toString());
+                    const reviewers = users.filter((u: any) => u._id.toString() !== user._id.toString());
                     for (const reviewer of reviewers) {
                         if (Math.random() > 0.6) {
                             await Review.create({

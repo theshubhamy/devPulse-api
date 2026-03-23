@@ -2,11 +2,22 @@ import { Hono } from 'hono';
 import { Repository } from '../models/repository.js';
 import { zValidator } from '@hono/zod-validator';
 import { createRepositorySchema } from '../validators/repository.js';
+import { authMiddleware } from '../middleware/auth.js';
 
-const app = new Hono();
+const app = new Hono<{
+  Variables: {
+    organizationId: string;
+    userId: string;
+    userEmail: string;
+    userRole: string;
+  };
+}>();
+
+app.use('*', authMiddleware);
 
 app.get('/', async c => {
-  const repositories = await Repository.find();
+  const orgId = c.get('organizationId');
+  const repositories = await Repository.find({ organizationId: orgId });
   return c.json({ repositories });
 });
 

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { authMiddleware } from './middleware/auth.js';
+// Routes are protected internally within each route module
 
 const app = new Hono();
 
@@ -40,14 +40,7 @@ import metricsRoutes from './routes/metrics.js';
 // Public Routes
 app.route('/webhooks', webhookRoutes);
 
-// Protected Routes (Require JWT)
-app.use('/organizations/*', authMiddleware);
-app.use('/users/*', authMiddleware);
-app.use('/repositories/*', authMiddleware);
-app.use('/work-sessions/*', authMiddleware);
-app.use('/analytics/*', authMiddleware);
-app.use('/pull-requests/*', authMiddleware);
-app.use('/metrics/*', authMiddleware);
+// Protected Routes (Require JWT) - Handled internally in routes
 
 app.route('/organizations', organizationRoutes);
 app.route('/users', userRoutes);

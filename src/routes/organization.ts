@@ -5,23 +5,42 @@ import { Repository } from '../models/repository.js';
 import { PullRequest } from '../models/pullRequest.js';
 import { zValidator } from '@hono/zod-validator';
 import { createOrganizationSchema } from '../validators/organization.js';
+import { authMiddleware } from '../middleware/auth.js';
 
-const app = new Hono();
+const app = new Hono<{
+  Variables: {
+    organizationId: string;
+    userId: string;
+    userEmail: string;
+    userRole: string;
+  };
+}>();
+
+app.use('*', authMiddleware);
 
 app.get('/', async c => {
-  const organizations = await Organization.find();
+  const orgId = c.get('organizationId');
+  const organizations = await Organization.find({ _id: orgId });
   return c.json({ organizations });
 });
 
-// Mock "me" for the first organization (since we haven't implemented multi-tenancy auth yet)
+// Returns the organization for the current authenticated user
 app.get('/me', async c => {
-  const organization = await Organization.findOne();
-  if (!organization) return c.json({ error: 'No organization found' }, 404);
+  const orgId = c.get('organizationId');
+  const organization = await Organization.findById(orgId);
+  if (!organization) return c.json({ error: 'Organization not found' }, 404);
   return c.json(organization);
 });
 
 app.get('/:id', async c => {
   const { id } = c.req.param();
+  const orgId = c.get('organizationId');
+  const role = c.get('userRole');
+
+  if (orgId !== id && role !== 'Owner' && role !== 'Admin') {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
   const organization = await Organization.findById(id);
   if (!organization) return c.json({ error: 'Organization not found' }, 404);
   return c.json(organization);
@@ -29,11 +48,18 @@ app.get('/:id', async c => {
 
 app.get('/:id/stats', async c => {
   const { id } = c.req.param();
+  const orgId = c.get('organizationId');
+  const role = c.get('userRole');
+
+  // Only allow if it's the user's organization or user is Admin/Owner
+  if (orgId !== id && role !== 'Admin' && role !== 'Owner') {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
 
   const [totalRepos, totalMembers, activePRs, allMergedPRs] = await Promise.all([
     Repository.countDocuments({ organizationId: id }),
     User.countDocuments({ organizationId: id }),
-    PullRequest.countDocuments({ status: 'open' }), // Simplified for MVP
+    PullRequest.countDocuments({ status: 'open' }),
     PullRequest.find({ status: 'merged' })
   ]);
 
