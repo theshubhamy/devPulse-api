@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '../utils/response.js';
 
 export class WorkSessionController {
   static async getActiveSession(c: AuthContext) {
-    const { userId } = c.req.param();
+    const userId = c.get('userId');
     const session = await WorkSession.findOne({
       userId,
       clockOutTime: { $exists: false },
@@ -14,7 +14,8 @@ export class WorkSessionController {
   }
 
   static async clockIn(c: AuthContext) {
-    const { userId, source } = (c.req as any).valid('json');
+    const userId = c.get('userId');
+    const { source } = (c.req as any).valid('json');
 
     const existingSession = await WorkSession.findOne({
       userId,
@@ -28,7 +29,8 @@ export class WorkSessionController {
   }
 
   static async clockOut(c: AuthContext) {
-    const { userId, idleMinutes } = (c.req as any).valid('json');
+    const userId = c.get('userId');
+    const { idleMinutes } = (c.req as any).valid('json');
 
     const session = await WorkSession.findOne({
       userId,
@@ -50,5 +52,20 @@ export class WorkSessionController {
     await addAggregationJob(userId);
 
     return successResponse(c, session, 'Clocked out successfully');
+  }
+
+  static async getHistory(c: AuthContext) {
+    const userId = c.get('userId');
+    const { days } = c.req.query();
+
+    const query: any = { userId };
+    if (days) {
+      const date = new Date();
+      date.setDate(date.getDate() - parseInt(days));
+      query.clockInTime = { $gte: date };
+    }
+
+    const sessions = await WorkSession.find(query).sort({ clockInTime: -1 });
+    return successResponse(c, sessions);
   }
 }

@@ -9,8 +9,9 @@ const app = new Hono<{ Variables: AuthVariables }>();
 
 app.use('*', authMiddleware);
 
-app.get('/active/:userId', WorkSessionController.getActiveSession);
+app.get('/active', WorkSessionController.getActiveSession);
 app.post('/clock-in', zValidator('json', clockInSchema), WorkSessionController.clockIn);
 app.post('/clock-out', zValidator('json', clockOutSchema), WorkSessionController.clockOut);
+app.get('/history', WorkSessionController.getHistory);
 
 export default app;

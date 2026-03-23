@@ -79,15 +79,19 @@ Prefix: `/work-sessions`
 
 ### Clock In
 - **Endpoint**: `POST /clock-in` (Protected)
-- **Body**: `{ "userId": "...", "source": "desktop" }`
+- **Body**: `{ "source": "desktop" }` (optional)
 
 ### Clock Out
 - **Endpoint**: `POST /clock-out` (Protected)
-- **Body**: `{ "userId": "...", "idleMinutes": 15 }`
+- **Body**: `{ "idleMinutes": 15 }` (optional)
 - **Response**: Recalculates metrics in the background.
 
 ### Get Active Session
-- **Endpoint**: `GET /active/:userId` (Protected)
+- **Endpoint**: `GET /active` (Protected)
+
+### Get Work Session History
+- **Endpoint**: `GET /history` (Protected)
+- **Query**: `?days=7` (optional)
 
 ---
 
