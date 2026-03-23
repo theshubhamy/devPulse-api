@@ -1,34 +1,15 @@
 import { Hono } from 'hono';
-import { Repository } from '../models/repository.js';
 import { zValidator } from '@hono/zod-validator';
 import { createRepositorySchema } from '../validators/repository.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { AuthVariables } from '../types/hono.js';
+import { RepositoryController } from '../controllers/repositoryController.js';
 
-const app = new Hono<{
-  Variables: {
-    organizationId: string;
-    userId: string;
-    userEmail: string;
-    userRole: string;
-  };
-}>();
+const app = new Hono<{ Variables: AuthVariables }>();
 
 app.use('*', authMiddleware);
 
-app.get('/', async c => {
-  const orgId = c.get('organizationId');
-  const repositories = await Repository.find({ organizationId: orgId });
-  return c.json({ repositories });
-});
-
-app.post('/', zValidator('json', createRepositorySchema), async c => {
-  const body = c.req.valid('json');
-  const newRepository = new Repository(body);
-  await newRepository.save();
-  return c.json(
-    { message: 'Repository created successfully', repository: newRepository },
-    201,
-  );
-});
+app.get('/', RepositoryController.list);
+app.post('/', zValidator('json', createRepositorySchema), RepositoryController.create);
 
 export default app;

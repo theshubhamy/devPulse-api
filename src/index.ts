@@ -1,6 +1,6 @@
 import { handle } from 'hono/aws-lambda';
 import app from './app.js';
-import { connectDB } from './db/connect.js';
+import { connectDB } from './config/connect.js';
 import { processMetricsAggregation } from './workers/metricsWorker.js';
 
 export const handler = async (event: any, context: any) => {

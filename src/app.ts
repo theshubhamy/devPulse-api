@@ -1,33 +1,12 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-// Routes are protected internally within each route module
+import { requestId } from 'hono/request-id'
+import mongoose from 'mongoose';
+import { successResponse, errorResponse } from './utils/response.js';
+import { AuthVariables } from './types/hono.js';
 
-const app = new Hono();
-
-// Global Middlewares
-app.use('*', logger());
-app.use(
-  '*',
-  cors({
-    origin: (origin) => origin, // Allow all origins for dev, or set specifically
-    credentials: true,
-  })
-);
-
-// Health Check
-app.get('/', async c => {
-  const isDBConnected = (await import('mongoose')).connection.readyState === 1;
-  return c.json({
-    message: 'Welcome to devPulse API - Built with Hono + Mongoose',
-    version: '1.0.0',
-    status: isDBConnected ? 'healthy' : 'degraded',
-    db: isDBConnected ? 'connected' : 'disconnected',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// Import routes
+// Route Imports
 import organizationRoutes from './routes/organization.js';
 import userRoutes from './routes/user.js';
 import repositoryRoutes from './routes/repository.js';
@@ -37,30 +16,50 @@ import webhookRoutes from './routes/webhook.js';
 import pullRequestRoutes from './routes/pullRequests.js';
 import metricsRoutes from './routes/metrics.js';
 
-// Public Routes
-app.route('/webhooks', webhookRoutes);
+const app = new Hono<{ Variables: AuthVariables }>();
 
-// Protected Routes (Require JWT) - Handled internally in routes
+// Global Middlewares (apply to everything)
+app.use('*', requestId());
+app.use('*', logger());
+app.use('*', cors({
+  origin: (origin) => origin,
+  credentials: true,
+}));
 
-app.route('/organizations', organizationRoutes);
-app.route('/users', userRoutes);
-app.route('/auth', userRoutes); // Frontend expects /auth/me
-app.route('/repositories', repositoryRoutes);
-app.route('/work-sessions', workSessionRoutes);
-app.route('/analytics', analyticsRoutes);
-app.route('/pull-requests', pullRequestRoutes);
-app.route('/metrics', metricsRoutes);
+// API V1 Routes
+const v1 = new Hono<{ Variables: AuthVariables }>().basePath('/api/v1');
+
+// Health Check (v1)
+v1.get('/', async c => {
+  const isDBConnected = mongoose.connection.readyState === 1;
+  const health = {
+    message: 'devPulse API',
+    version: '1.0.0',
+    status: isDBConnected ? 'healthy' : 'degraded',
+    db: isDBConnected ? 'connected' : 'disconnected',
+  };
+  return successResponse(c, health, 'Service is running');
+});
+
+// Route Registration (on v1)
+v1.route('/webhooks', webhookRoutes as any); // Cast as any if Routes don't define Variables yet
+v1.route('/organizations', organizationRoutes as any);
+v1.route('/users', userRoutes as any);
+v1.route('/auth', userRoutes as any);
+v1.route('/repositories', repositoryRoutes as any);
+v1.route('/work-sessions', workSessionRoutes as any);
+v1.route('/analytics', analyticsRoutes as any);
+v1.route('/pull-requests', pullRequestRoutes as any);
+v1.route('/metrics', metricsRoutes as any);
+
+// Mount V1
+app.route('/', v1);
 
 // Global Error Handler
 app.onError((err, c) => {
-  console.error(`[Error] ${err.message}`);
-  return c.json(
-    {
-      error: err.message || 'Internal Server Error',
-      status: 'error',
-    },
-    err instanceof Error && 'status' in err ? (err as any).status : 500,
-  );
+  console.error(`[Global Error] ${err.message}`);
+  const status = (err as any).status || 500;
+  return errorResponse(c, err.message || 'Internal Server Error', status);
 });
 
 export default app;

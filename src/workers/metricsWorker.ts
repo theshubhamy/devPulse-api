@@ -89,7 +89,7 @@ export const processMetricsAggregation = async (userId: string, targetDate: Date
             linesDeleted,
             deliveryReliabilityScore,
         },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
     );
 
     console.log(`Detailed metrics updated for user: ${userId} with score: ${deliveryReliabilityScore}`);

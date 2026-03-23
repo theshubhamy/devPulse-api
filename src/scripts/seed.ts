@@ -1,12 +1,5 @@
-import mongoose from 'mongoose';
-import { Organization } from '../models/organization.js';
-import { User } from '../models/user.js';
-import { Repository } from '../models/repository.js';
-import { PullRequest } from '../models/pullRequest.js';
-import { Review } from '../models/review.js';
-import { WorkSession } from '../models/workSession.js';
-import { DailyMetrics } from '../models/dailyMetrics.js';
-import { connectDB } from '../db/connect.js';
+import { Organization, User, Repository, PullRequest, Review, WorkSession, DailyMetrics } from '../models/index.js';
+import { connectDB } from '../config/connect.js';
 import { processMetricsAggregation } from '../workers/metricsWorker.js';
 
 const SEED_DAYS = 30;
