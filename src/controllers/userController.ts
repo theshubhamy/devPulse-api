@@ -50,7 +50,7 @@ export class UserController {
         path: '/',
       });
 
-      return successResponse(c, { user, token }, 'Login successful');
+      return successResponse(c, { user }, 'Login successful');
     } catch (err: any) {
       return errorResponse(c, err.message, 500);
     }
