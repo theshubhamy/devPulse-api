@@ -40,11 +40,6 @@ export class DevPulseApiStack extends cdk.Stack {
     // Provide a Function URL (HTTPS endpoint) to the Lambda
     const functionUrl = honoLambda.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
-      cors: {
-        allowedOrigins: ['*'],
-        allowedMethods: [lambda.HttpMethod.ALL],
-        allowedHeaders: ['*'],
-      },
     });
 
     // Output the url

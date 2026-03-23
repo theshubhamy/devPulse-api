@@ -27,7 +27,7 @@ app.use('*', cors({
 }));
 
 // API V1 Routes
-const v1 = new Hono<{ Variables: AuthVariables }>().basePath('/api/v1');
+const v1 = new Hono<{ Variables: AuthVariables }>();
 
 // Health Check (v1)
 v1.get('/', async c => {
@@ -53,7 +53,7 @@ v1.route('/pull-requests', pullRequestRoutes as any);
 v1.route('/metrics', metricsRoutes as any);
 
 // Mount V1
-app.route('/', v1);
+app.route('/api/v1', v1);
 
 // Global Error Handler
 app.onError((err, c) => {
