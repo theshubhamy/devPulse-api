@@ -9,13 +9,11 @@ import { AuthVariables } from './types/hono.js';
 // Route Imports
 import organizationRoutes from './routes/organization.js';
 import userRoutes from './routes/user.js';
-import repositoryRoutes from './routes/repository.js';
 import workSessionRoutes from './routes/workSession.js';
 import analyticsRoutes from './routes/analytics.js';
-import webhookRoutes from './routes/webhook.js';
-import pullRequestRoutes from './routes/pullRequests.js';
 import metricsRoutes from './routes/metrics.js';
-
+import payrollRoutes from './routes/payroll.js';
+import teamRoutes from './routes/team.js';
 const app = new Hono<{ Variables: AuthVariables }>();
 
 // Global Middlewares (apply to everything)
@@ -42,14 +40,15 @@ v1.get('/', async c => {
 });
 
 // Route Registration (on v1)
-v1.route('/webhooks', webhookRoutes as any); // Cast as any if Routes don't define Variables yet
 v1.route('/organizations', organizationRoutes as any);
 v1.route('/users', userRoutes as any);
 v1.route('/auth', userRoutes as any);
-v1.route('/repositories', repositoryRoutes as any);
+
+v1.route('/teams', teamRoutes as any);
 v1.route('/work-sessions', workSessionRoutes as any);
+
+v1.route('/payroll', payrollRoutes as any);
 v1.route('/analytics', analyticsRoutes as any);
-v1.route('/pull-requests', pullRequestRoutes as any);
 v1.route('/metrics', metricsRoutes as any);
 
 // Mount V1

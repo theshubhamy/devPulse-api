@@ -9,12 +9,13 @@ const app = new Hono<{ Variables: AuthVariables }>();
 
 // --- Public Routes ---
 app.post('/login', UserController.login);
-app.post('/signup', zValidator('json', createUserSchema), UserController.signup);
+app.post('/register-organization', UserController.registerOrganization);
 
 // --- Auth Middleware (Protected Routes follow) ---
 app.use('*', authMiddleware);
 
 app.get('/', UserController.listUsers);
+app.post('/employee', zValidator('json', createUserSchema), UserController.createEmployee);
 app.get('/me', UserController.getMe);
 app.post('/logout', UserController.logout);
 

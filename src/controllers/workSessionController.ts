@@ -68,4 +68,52 @@ export class WorkSessionController {
     const sessions = await WorkSession.find(query).sort({ clockInTime: -1 });
     return successResponse(c, sessions);
   }
+
+  static async breakStart(c: AuthContext) {
+    const userId = c.get('userId');
+    const { type } = (c.req as any).valid('json');
+
+    const session = await WorkSession.findOne({
+      userId,
+      clockOutTime: { $exists: false },
+    });
+    if (!session) return errorResponse(c, 'No active session to start a break', 400);
+
+    // Check if there is an ongoing break
+    const activeBreak = session.breaks.find((b: any) => !b.endTime);
+    if (activeBreak) return errorResponse(c, 'There is already an active break', 400);
+
+    session.breaks.push({
+      type,
+      startTime: new Date(),
+    });
+    await session.save();
+
+    return successResponse(c, session, 'Break started successfully');
+  }
+
+  static async breakEnd(c: AuthContext) {
+    const userId = c.get('userId');
+    const { type } = (c.req as any).valid('json');
+
+    const session = await WorkSession.findOne({
+      userId,
+      clockOutTime: { $exists: false },
+    });
+    if (!session) return errorResponse(c, 'No active session to end a break', 400);
+
+    // Find the active break matching the type
+    const activeBreakIndex = session.breaks.findIndex((b: any) => !b.endTime && b.type === type);
+    if (activeBreakIndex === -1) return errorResponse(c, 'No active break of the specified type found', 400);
+
+    const activeBreak = session.breaks[activeBreakIndex];
+    activeBreak.endTime = new Date();
+    const durationMs = activeBreak.endTime.getTime() - activeBreak.startTime.getTime();
+    activeBreak.durationMinutes = Math.floor(durationMs / 60000);
+
+    session.breaks[activeBreakIndex] = activeBreak;
+    await session.save();
+
+    return successResponse(c, session, 'Break ended successfully');
+  }
 }

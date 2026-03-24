@@ -1,6 +1,6 @@
-# devPulse API Documentation
+# DevPulse API Documentation
 
-**Base API URL**: `https://u6qm7ngmgudbqhuxwpubpdkwvu0njbzr.lambda-url.ap-south-1.on.aws/api/v1`
+**Base API URL**: `https://api.devpulse.example.com/api/v1`
 **Development URL**: `http://localhost:5500/api/v1`
 
 ---
@@ -10,41 +10,76 @@ Most routes require a valid JWT token. This token can be provided in two ways:
 1.  **Authorization Header**: `Bearer <token>`
 2.  **Cookie**: `auth_token=<token>` (HTTP-only)
 
+> Note: All endpoints that are not public require the token.
+
 ---
 
 ## 1. Authentication & Users
-Prefix: `/auth` (or `/users`)
+Prefix: `/auth` (Note: Mapped to User Controller in app.ts)
 
-### Login
-- **Endpoint**: `POST /auth/login`
+### Register Organization
+- **Endpoint**: `POST /auth/register-organization`
+- **Access**: Public
+- **Description**: Creates a new Organization and provisions the initial Owner account. The `email` becomes the Owner's login credential. Normal employees cannot register independently.
 - **Body**:
   ```json
   {
-    "email": "user@example.com",
+    "orgName": "Company Name",
+    "name": "Jane Doe",
+    "email": "owner@company.com",
     "password": "securepassword123"
   }
   ```
-- **Response**: Success (200) with `token` and `user` data.
+- **Response**: Success (201) with organization and owner data.
 
-### Signup
-- **Endpoint**: `POST /auth/signup`
+### Login
+- **Endpoint**: `POST /auth/login`
+- **Access**: Public
+- **Description**: Single login endpoint for **all roles** — Organization Owner, Admin, Manager, and Employee. The JWT returned in the response and cookie contains the `role` field so the frontend can route accordingly.
 - **Body**:
   ```json
   {
-    "name": "Jane Doe",
-    "email": "jane@example.com",
-    "password": "securepassword123",
-    "organizationId": "mongodb_id_of_org"
+    "email": "user@company.com",
+    "password": "securepassword123"
   }
   ```
-- **Response**: Success (201)
+- **Response**: Success (200) with `user` object and `token`.
+  ```json
+  {
+    "user": { "name": "...", "role": "Owner", ... },
+    "token": "<jwt>"
+  }
+  ```
+
+### Create Employee Account
+- **Endpoint**: `POST /auth/employee`
+- **Access**: Protected (Owner/Admin Only)
+- **Description**: Provisions a new employee within the current organization. The `employeeId` is for HR reference; login is done using `email + password`.
+- **Body**:
+  ```json
+  {
+    "employeeId": "EMP-003",
+    "name": "John Smith",
+    "email": "john@company.com",
+    "password": "startpassword123",
+    "role": "Employee",
+    "teamId": "mongodb_id_of_team"
+  }
+  ```
 
 ### Get Current User Profile
-- **Endpoint**: `GET /auth/me` (Protected)
+- **Endpoint**: `GET /auth/me`
+- **Access**: Protected
 - **Response**: Current authenticated user object.
 
+### List Organization Users
+- **Endpoint**: `GET /auth/`
+- **Access**: Protected
+- **Response**: List of all users inside the currently authenticated organization.
+
 ### Logout
-- **Endpoint**: `POST /auth/logout` (Protected)
+- **Endpoint**: `POST /auth/logout`
+- **Access**: Protected
 - **Action**: Clears `auth_token` cookie.
 
 ---
@@ -53,89 +88,81 @@ Prefix: `/auth` (or `/users`)
 Prefix: `/organizations`
 
 ### List Current Organization
-- **Endpoint**: `GET /` (Protected)
-- **Response**: `{ "organizations": [...] }`
+- **Endpoint**: `GET /`
+- **Access**: Protected
+- **Response**: Array of organizations matching the user's `organizationId`.
 
-### Create Organization
-- **Endpoint**: `POST /`
-- **Body**: `{ "name": "Company Name" }`
-
-### Get Organization Stats
-- **Endpoint**: `GET /:id/stats` (Protected)
-- **Response**: 
-  ```json
-  {
-    "totalRepos": 5,
-    "totalMembers": 10,
-    "activePRs": 2,
-    "avgMergeTime": 12.5
-  }
-  ```
+### Get My Organization
+- **Endpoint**: `GET /me`
+- **Access**: Protected
+- **Response**: `{ "_id": "...", "name": "Company Name", ... }`
 
 ---
 
-## 3. Work Sessions (Activity Tracking)
+## 3. Teams
+Prefix: `/teams`
+
+### Create Team
+- **Endpoint**: `POST /`
+- **Access**: Protected (Admins/Owners)
+- **Body**: `{ "name": "Frontend Squad" }`
+
+### List Teams
+- **Endpoint**: `GET /`
+- **Access**: Protected
+
+### Get Team Members
+- **Endpoint**: `GET /:id/members`
+- **Access**: Protected
+- **Response**: Returns all users where `teamId == :id`.
+
+---
+
+## 4. Work Sessions & Breaks (Activity Tracking)
 Prefix: `/work-sessions`
 
 ### Clock In
-- **Endpoint**: `POST /clock-in` (Protected)
+- **Endpoint**: `POST /clock-in`
+- **Access**: Protected
 - **Body**: `{ "source": "desktop" }` (optional)
 
 ### Clock Out
-- **Endpoint**: `POST /clock-out` (Protected)
+- **Endpoint**: `POST /clock-out`
+- **Access**: Protected
 - **Body**: `{ "idleMinutes": 15 }` (optional)
-- **Response**: Recalculates metrics in the background.
+- **Response**: Updates session duration and ends open breaks.
+
+### Start Break
+- **Endpoint**: `POST /break-start`
+- **Access**: Protected
+- **Body**: `{ "type": "short_break" | "lunch_break" }`
+
+### End Break
+- **Endpoint**: `POST /break-end`
+- **Access**: Protected
+- **Body**: `{ "type": "short_break" | "lunch_break" }`
 
 ### Get Active Session
-- **Endpoint**: `GET /active` (Protected)
+- **Endpoint**: `GET /active`
+- **Access**: Protected
+- **Response**: The currently running session, including any active breaks.
 
 ### Get Work Session History
-- **Endpoint**: `GET /history` (Protected)
+- **Endpoint**: `GET /history`
+- **Access**: Protected
 - **Query**: `?days=7` (optional)
 
 ---
 
-## 4. Analytics & Metrics
-Prefixes: `/analytics`, `/metrics`
+## 5. Payroll
+Prefix: `/payroll`
 
-### Get User Dashboard (Recent History)
-- **Endpoint**: `GET /analytics/user/:userId` (Protected)
-- **Query**: `?limit=30`
-- **Response**: Daily metrics for the last N days with aggregates.
+### Get Payroll History
+- **Endpoint**: `GET /`
+- **Access**: Protected
+- **Response**: Retrieves recent payroll periods applicable for the current employee.
 
-### Get Team Summary
-- **Endpoint**: `GET /analytics/team/:orgId` (Protected)
-- **Response**: Performance of all team members today.
-
-### Get Reliability Score
-- **Endpoint**: `GET /metrics/score/:userId` (Protected)
-
-### Get PR Merge Time Trend
-- **Endpoint**: `GET /metrics/merge-time-trend` (Protected)
-- **Query**: `?weeks=4`
-
----
-
-## 5. Repositories & Pull Requests
-Prefixes: `/repositories`, `/pull-requests`
-
-### List Repositories
-- **Endpoint**: `GET /repositories/` (Protected)
-
-### List Pull Requests
-- **Endpoint**: `GET /pull-requests/` (Protected)
-- **Response**: List of recent PRs with author details.
-
-### PR Velocity
-- **Endpoint**: `GET /pull-requests/velocity` (Protected)
-- **Query**: `?days=7`
-
----
-
-## 6. Webhooks (Public)
-Prefix: `/webhooks`
-
-### GitHub Webhook
-- **Endpoint**: `POST /github`
-- **Headers**: `x-github-event` required.
-- **Action**: Processes `pull_request` and `pull_request_review` events.
+### Generate Demo Payroll
+- **Endpoint**: `POST /generate-demo`
+- **Access**: Protected
+- **Description**: Generates a dummy entry of a generated timesheet calculation for MVP demonstration.

@@ -25,10 +25,12 @@ export class UserController {
       if (!email || !password) return errorResponse(c, 'Email and password are required', 400);
 
       const user = await User.findOne({ email });
-      if (!user) return errorResponse(c, 'Invalid email or password', 401);
+      if (!user) return errorResponse(c, 'Invalid credentials', 401);
+
+      if (!user.isActive) return errorResponse(c, 'Account is inactive. Contact your admin.', 403);
 
       const isMatch = await (user as any).comparePassword(password);
-      if (!isMatch) return errorResponse(c, 'Invalid email or password', 401);
+      if (!isMatch) return errorResponse(c, 'Invalid credentials', 401);
 
       const token = await sign(
         {
@@ -67,10 +69,42 @@ export class UserController {
     return successResponse(c, null, 'Logged out successfully');
   }
 
-  static async signup(c: AuthContext) {
+  static async createEmployee(c: AuthContext) {
+    const orgId = c.get('organizationId');
+    const role = c.get('userRole');
+
+    if (role !== 'Owner' && role !== 'Admin') {
+      return errorResponse(c, 'Only Admins can create employees', 403);
+    }
+
     const body = (c.req as any).valid('json');
+    body.organizationId = orgId; // Force employee to belong to the creator's org
+
+    const existingUser = await User.findOne({ employeeId: body.employeeId });
+    if (existingUser) return errorResponse(c, 'Employee ID already exists', 400);
+
     const newUser = new User(body);
     await newUser.save();
-    return successResponse(c, newUser, 'User created successfully', 201);
+    return successResponse(c, newUser, 'Employee created successfully', 201);
+  }
+
+  static async registerOrganization(c: AuthContext) {
+    // Expected body: { orgName: string, name: string, email: string, password: string }
+    // email must be unique — this becomes the Owner's login credential
+    const { orgName, ...userData } = await c.req.json();
+
+    const { Organization } = await import('../models/organization.js');
+
+    // Create Org
+    const org = new Organization({ name: orgName });
+    await org.save();
+
+    // Create Owner User
+    userData.organizationId = org._id;
+    userData.role = 'Owner';
+    const newUser = new User(userData);
+    await newUser.save();
+
+    return successResponse(c, { organization: org, owner: newUser }, 'Organization registered successfully', 201);
   }
 }

@@ -4,11 +4,12 @@ import bcrypt from 'bcryptjs';
 
 export interface IUser {
   organizationId: Types.ObjectId;
-  githubUserId?: string;
+  teamId?: Types.ObjectId;
+  employeeId: string;
   name: string;
   email: string;
   password?: string;
-  role: 'Owner' | 'Admin' | 'Manager' | 'Developer';
+  role: 'Owner' | 'Admin' | 'Manager' | 'Employee';
   isActive: boolean;
 }
 
@@ -19,14 +20,18 @@ const UserSchema = new Schema<IUser>(
       ref: 'Organization',
       required: true,
     },
-    githubUserId: { type: String },
+    teamId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Team',
+    },
+    employeeId: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String },
+    password: { type: String, required: true },
     role: {
       type: String,
-      enum: ['Owner', 'Admin', 'Manager', 'Developer'],
-      default: 'Developer',
+      enum: ['Owner', 'Admin', 'Manager', 'Employee'],
+      default: 'Employee',
     },
     isActive: { type: Boolean, default: true },
   },
